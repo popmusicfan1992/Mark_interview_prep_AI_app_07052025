@@ -1,4 +1,4 @@
-export const BASE_URL = "https://mark-interview-prep-ai-app-07052025.vercel.app/";
+export const BASE_URL = "https://mark-interview-prep-ai-app-07052025.vercel.app";
 
 export const API_PATHS = {
   AUTH: {
