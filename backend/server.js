@@ -11,11 +11,12 @@ const { protect } = require("./middlewares/authMiddleware");
 const { generateInterviewQuestions, generateConceptExplanation } = require("./controllers/aiController");
 
 const app = express();
-
+// Allow multiple origins
+const allowedOrigins = ['http://localhost:5173', 'https://mark-interview-prep-ai-app-07052025.vercel.app'];
 // Middleware to handle CORS
 app.use(
   cors({
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
