@@ -12,7 +12,7 @@ const { generateInterviewQuestions, generateConceptExplanation } = require("./co
 
 const app = express();
 // Allow multiple origins
-const allowedOrigins = ['http://localhost:5173', 'https://mark-interview-prep-ai-app-07052025.vercel.app'];
+const allowedOrigins = ['http://localhost:5173', 'https://mark-interview-prep-ai-app-07052025-three.vercel.app'];
 // Middleware to handle CORS
 app.use(
   cors({
