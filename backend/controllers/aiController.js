@@ -25,23 +25,26 @@ const generateInterviewQuestions = async (req, res) => {
     );
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.0-flash",
       contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
     });
 
-    let rawText = response.text;
+    const rawText = response.text;
 
-    // Clean it: Remove ```json and ``` from beginning and end
+    // Clean markdown code fences if present (safety fallback)
     const cleanedText = rawText
-      .replace(/^```json\s*/, "") // remove starting ```json
-      .replace(/```$/, "") // remove ending ```
-      .trim(); // remove extra spaces
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
 
-    // Now safe to parse
     const data = JSON.parse(cleanedText);
 
     res.status(200).json(data);
   } catch (error) {
+    console.error("generateInterviewQuestions error:", error);
     res.status(500).json({
       message: "Failed to generate questions",
       error: error.message,
@@ -63,25 +66,28 @@ const generateConceptExplanation = async (req, res) => {
     const prompt = conceptExplainPrompt(question);
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.0-flash",
       contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
     });
 
-    let rawText = response.text;
+    const rawText = response.text;
 
-    // Clean it: Remove ```json and ``` from beginning and end
+    // Clean markdown code fences if present (safety fallback)
     const cleanedText = rawText
-      .replace(/^```json\s*/, "") // remove starting ```json
-      .replace(/```$/, "") // remove ending ```
-      .trim(); // remove extra spaces
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
 
-    // Now safe to parse
     const data = JSON.parse(cleanedText);
 
     res.status(200).json(data);
   } catch (error) {
+    console.error("generateConceptExplanation error:", error);
     res.status(500).json({
-      message: "Failed to generate questions",
+      message: "Failed to generate explanation",
       error: error.message,
     });
   }
