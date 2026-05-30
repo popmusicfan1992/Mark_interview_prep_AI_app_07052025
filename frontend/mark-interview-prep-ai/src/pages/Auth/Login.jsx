@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../../components/Inputs/Input";
 import { validateEmail } from "../../utils/helper";
@@ -14,6 +14,58 @@ const Login = ({ setCurrentPage }) => {
   const { updateUser } = useContext(UserContext);
 
   const navigate = useNavigate();
+
+  // Load Google SDK script dynamically on mount
+  useEffect(() => {
+    const handleGoogleCredentialResponse = async (response) => {
+      try {
+        setError("");
+        const res = await axiosInstance.post(API_PATHS.AUTH.GOOGLE_LOGIN, {
+          idToken: response.credential,
+        });
+
+        const { token } = res.data;
+        if (token) {
+          localStorage.setItem("token", token);
+          updateUser(res.data);
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        if (error.response && error.response.data.message) {
+          setError(error.response.data.message);
+        } else {
+          setError("Failed to sign in with Google. Please try again.");
+        }
+      }
+    };
+
+    const initializeGoogleSignIn = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "842415629150-h0i8p3q3u5ntkibs4spnfhmmhv5mgb3l.apps.googleusercontent.com",
+          callback: handleGoogleCredentialResponse,
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-btn"),
+          { theme: "outline", size: "large", width: "100%", shape: "pill" }
+        );
+      }
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client?hl=en";
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleSignIn;
+    document.body.appendChild(script);
+
+    return () => {
+      // Clean up script safely if present in body
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, [navigate, updateUser]);
 
   // Handle Login Form Submit
   const handleLogin = async (e) => {
@@ -84,9 +136,18 @@ const Login = ({ setCurrentPage }) => {
           LOGIN
         </button>
 
+        <div className="flex items-center my-4">
+          <div className="flex-grow border-t border-gray-200"></div>
+          <span className="flex-shrink mx-4 text-gray-400 text-xs font-bold uppercase tracking-wider">or</span>
+          <div className="flex-grow border-t border-gray-200"></div>
+        </div>
+
+        <div id="google-signin-btn" className="w-full flex justify-center mb-4 min-h-[40px]"></div>
+
         <p className="text-[13px] text-slate-800 mt-3">
           Don’t have an account?{" "}
           <button
+            type="button"
             className="font-medium text-primary underline cursor-pointer"
             onClick={() => {
               setCurrentPage("signup");

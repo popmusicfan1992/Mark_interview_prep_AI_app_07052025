@@ -18,6 +18,13 @@ exports.addQuestionsToSession = async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
+    // Check if the logged-in user owns this session
+    if (session.user.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to modify this session" });
+    }
+
     // Create new questions
     const createdQuestions = await Question.insertMany(
       questions.map((q) => ({
@@ -42,12 +49,19 @@ exports.addQuestionsToSession = async (req, res) => {
 // @access  Private
 exports.togglePinQuestion = async (req, res) => {
   try {
-    const question = await Question.findById(req.params.id);
+    const question = await Question.findById(req.params.id).populate("session");
 
     if (!question) {
       return res
         .status(404)
         .json({ success: false, message: "Question not found" });
+    }
+
+    // Verify session ownership
+    if (!question.session || question.session.user.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to modify this question" });
     }
 
     question.isPinned = !question.isPinned;
@@ -65,12 +79,19 @@ exports.togglePinQuestion = async (req, res) => {
 exports.updateQuestionNote = async (req, res) => {
   try {
     const { note } = req.body;
-    const question = await Question.findById(req.params.id);
+    const question = await Question.findById(req.params.id).populate("session");
 
     if (!question) {
       return res
         .status(404)
         .json({ success: false, message: "Question not found" });
+    }
+
+    // Verify session ownership
+    if (!question.session || question.session.user.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to modify this question" });
     }
 
     question.note = note || "";

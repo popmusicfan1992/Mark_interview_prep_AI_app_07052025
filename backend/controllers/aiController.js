@@ -4,7 +4,39 @@ const {
   questionAnswerPrompt,
 } = require("../utils/prompts");
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getAI = () => {
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+};
+
+const MODEL_CHAIN = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+];
+
+const generateWithFallback = async (prompt, responseMimeType) => {
+  const aiInstance = getAI();
+  let lastError = null;
+
+  for (const model of MODEL_CHAIN) {
+    try {
+      const response = await aiInstance.models.generateContent({
+        model,
+        contents: prompt,
+        config: responseMimeType ? { responseMimeType } : undefined,
+      });
+      if (response && response.text) {
+        return response.text;
+      }
+    } catch (error) {
+      lastError = error;
+      console.warn(`[AI Controller] Model ${model} failed:`, error.message || error);
+    }
+  }
+  throw lastError || new Error("All generative models failed");
+};
 
 // @desc    Generate interview questions and answers using Gemini
 // @route   POST /api/ai/generate-questions
@@ -24,15 +56,7 @@ const generateInterviewQuestions = async (req, res) => {
       numberOfQuestions
     );
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
-
-    const rawText = response.text;
+    const rawText = await generateWithFallback(prompt, "application/json");
 
     // Clean markdown code fences if present (safety fallback)
     const cleanedText = rawText
@@ -65,15 +89,7 @@ const generateConceptExplanation = async (req, res) => {
 
     const prompt = conceptExplainPrompt(question);
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
-
-    const rawText = response.text;
+    const rawText = await generateWithFallback(prompt, "application/json");
 
     // Clean markdown code fences if present (safety fallback)
     const cleanedText = rawText

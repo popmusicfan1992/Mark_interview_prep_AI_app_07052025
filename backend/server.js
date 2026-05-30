@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const connectDB = require("./config/db");
 
 const authRoutes = require('./routes/authRoutes')
@@ -11,8 +12,10 @@ const { protect } = require("./middlewares/authMiddleware");
 const { generateInterviewQuestions, generateConceptExplanation } = require("./controllers/aiController");
 
 const app = express();
-// Allow multiple origins
-const allowedOrigins = ['http://localhost:5173', 'https://mark-interview-prep-ai-app-07052025-three.vercel.app'];
+// Allow multiple origins, configurable via process.env.ALLOWED_ORIGINS
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://mark-interview-prep-ai-app-07052025-three.vercel.app'];
 // Middleware to handle CORS
 app.use(
   cors({
@@ -21,6 +24,16 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "uploads");
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+} catch (err) {
+  console.warn("Could not create uploads directory (might be a read-only filesystem like Vercel):", err.message);
+}
 
 connectDB()
 

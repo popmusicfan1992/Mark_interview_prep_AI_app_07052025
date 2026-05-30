@@ -70,6 +70,13 @@ exports.getSessionById = async (req, res) => {
         .json({ success: false, message: "Session not found" });
     }
 
+    // Check if the logged-in user owns this session
+    if (session.user.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to view this session" });
+    }
+
     res.status(200).json({ success: true, session });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error" });
@@ -103,5 +110,19 @@ exports.deleteSession = async (req, res) => {
     res.status(200).json({ message: "Session deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+// @desc    Seed default mock sessions for the logged-in user
+// @route   POST /api/sessions/seed
+// @access  Private
+exports.seedSessions = async (req, res) => {
+  try {
+    const { seedDefaultData } = require("../utils/seeder");
+    const seeded = await seedDefaultData(req.user._id);
+    res.status(201).json({ success: true, sessions: seeded });
+  } catch (error) {
+    console.error("Manual seeding error:", error);
+    res.status(500).json({ success: false, message: "Failed to seed default data", error: error.message });
   }
 };
